@@ -1,0 +1,793 @@
+{
+  "name": "passive-subdomain-enumeration",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "=https://crt.sh/?q={{ $json.domain }}&output=json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        48,
+        -512
+      ],
+      "id": "9d0a6384-ad9f-4736-a69d-3bb189e77543",
+      "name": "crt.sh"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "upload-file",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -848,
+        -336
+      ],
+      "id": "e6059302-9c37-49ce-9c02-ff6a0c5693dd",
+      "name": "Webhook",
+      "webhookId": "aac74f4c-6bee-4894-84bf-f3b168b7333e",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "respondWith": "binary",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2064,
+        40
+      ],
+      "id": "deb835c3-0863-42ee-b4de-20327f9e2574",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -176,
+        -336
+      ],
+      "id": "7cbd2870-af18-4190-8059-7d7a064ca241",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "command": "=subfinder -d  {{ $json.domain }} -silent -all"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        48,
+        -704
+      ],
+      "id": "d2e85f1a-0413-42ca-9762-d66d415ebe01",
+      "name": "subfinder",
+      "credentials": {
+        "sshPassword": {
+          "id": "eLLgkUEUKZlQa2s9",
+          "name": "host ssh"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "=assetfinder -subs-only  {{ $json.domain }}"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        48,
+        -320
+      ],
+      "id": "c9c8352f-c1ee-4b85-a82f-fd7ec8701ebf",
+      "name": "assesfinder"
+    },
+    {
+      "parameters": {
+        "url": "=https://web.archive.org/cdx/search/cdx?url=*.{{ $json.domain }}/*&fl=original&collapse=urlkey",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        48,
+        -128
+      ],
+      "id": "d0ddfa6b-6319-4813-9bd1-5b97d33c2c35",
+      "name": "Wayback"
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        496,
+        -464
+      ],
+      "id": "53c868d3-03a4-49d8-b039-1134104e49d6",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "subdomain",
+        "options": {
+          "fileName": "subdomains.txt"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        496,
+        64
+      ],
+      "id": "884299c7-c79a-4d70-bb33-a7e365a11f8c",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "path": "/home/kali",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        720,
+        64
+      ],
+      "id": "548cc427-5838-4d90-847a-1dbb472b8de3",
+      "name": "Upload a file",
+      "credentials": {
+        "sshPassword": {
+          "id": "eLLgkUEUKZlQa2s9",
+          "name": "host ssh"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "httpx-toolkit -silent -tech-detect -l /home/kali/subdomains.txt -no-color -threads 50 -timeout 4 -retries 1"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        944,
+        64
+      ],
+      "id": "f5ca5455-69d6-4bab-8010-94e5288a334b",
+      "name": "httpx",
+      "credentials": {
+        "sshPassword": {
+          "id": "eLLgkUEUKZlQa2s9",
+          "name": "host ssh"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3be99149-2000-4b93-a5ba-ed6f24a38cb7",
+              "name": "Passive Results",
+              "value": "={{ $json.stdout }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1168,
+        64
+      ],
+      "id": "2061c6a1-634f-49dd-a9fc-edf9e237c8e2",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "subdomain",
+        "options": {
+          "fileName": "httpx-subdomains.txt"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1616,
+        64
+      ],
+      "id": "860ed7c9-90e7-4927-8922-02d7290f4d11",
+      "name": "Convert to File1"
+    },
+    {
+      "parameters": {
+        "jsCode": "let text = $json[\"message\"];\n\n// Remove ```json formatting\ntext = text.replace(/```json|```/g, \"\").trim();\n\n// Parse the JSON array\nconst arr = JSON.parse(text);\n\n// Filter only relevant=true\nconst filtered = arr\n  .filter(item => item.relevant === true)\n  .map(item => item.subdomain);\n\n// Return a single item with list\nreturn [{\n  json: {\n    subdomains: filtered\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2064,
+        232
+      ],
+      "id": "eed20c87-31b0-404c-8dc5-f7d84de10ba4",
+      "name": "Code in JavaScript8"
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "subdomains",
+        "options": {
+          "fileName": "interesting-subdomains.txt"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2288,
+        232
+      ],
+      "id": "481bc5d2-f744-453d-b096-123c3dd10821",
+      "name": "Convert to File2"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "path": "/home/kali",
+        "options": {
+          "fileName": "interesting-subdomains.txt"
+        }
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        2512,
+        232
+      ],
+      "id": "45c78f37-6e55-409d-b18c-3ab68705c7d6",
+      "name": "Upload a file1",
+      "credentials": {
+        "sshPassword": {
+          "id": "eLLgkUEUKZlQa2s9",
+          "name": "host ssh"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "path": "/home/kali",
+        "options": {
+          "fileName": "httpx-subdomain.txt"
+        }
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        1840,
+        40
+      ],
+      "id": "0cdb5321-d514-4814-9370-7828a9acdd75",
+      "name": "Upload a file2",
+      "credentials": {
+        "sshPassword": {
+          "id": "eLLgkUEUKZlQa2s9",
+          "name": "host ssh"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "binaryPropertyName": "file",
+        "destinationKey": "file",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        -624,
+        -336
+      ],
+      "id": "f4a8ba0f-80d5-441a-9353-3105f3aa240d",
+      "name": "Domains names"
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = [];\n\nfor (const item of items) {\n  const lines = item.json.file\n    .split(/\\r?\\n/)\n    .map(line => line.trim())\n    .filter(line => line.length > 0);\n  \n  for (const domain of lines) {\n    results.push({ json: { domain } });\n  }\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        -336
+      ],
+      "id": "ab9d0e6b-87bd-4bd4-af30-dfd05fc82dbc",
+      "name": "make json of domains"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = items[0].json;\nconst stdout = data.stdout || \"\";\n\nconst subdomains = stdout\n  .split('\\n')\n  .filter(s => s.trim() !== '')\n  .map(s => s.trim());\n\nreturn [{\n  json: {\n    subdomains\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        -704
+      ],
+      "id": "f327c904-756b-412c-aaed-08d13304ce4c",
+      "name": "filter domains"
+    },
+    {
+      "parameters": {
+        "fieldsToSummarize": {
+          "values": [
+            {
+              "aggregation": "append",
+              "field": "name_value"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.summarize",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        -512
+      ],
+      "id": "3e3fead8-1ba1-4e7e-b5dc-939261fced11",
+      "name": "filter domains1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = items[0].json;\nconst stdout = data.stdout || \"\";\n\nconst subdomains = stdout\n  .split('\\n')\n  .filter(s => s.trim() !== '')\n  .map(s => s.trim());\n\nreturn [{\n  json: {\n    subdomains\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        -320
+      ],
+      "id": "35c8039a-ae67-466b-80cc-e5143d17f87d",
+      "name": "filter domains2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = items[0].json.data;\n\nconst lines = text.split(\"\\n\");\n\nconst subs = lines.map(line => {\n    try {\n        const url = line.replace(/^https?:\\/\\//, '');\n        return url.split(\"/\")[0];\n    } catch {\n        return null;\n    }\n}).filter(Boolean);\n\nconst subdomains = [...new Set(subs)];\n\nreturn [{\n  json: {\n    subdomains\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        -128
+      ],
+      "id": "dc35aa73-80f3-4c0f-abcb-51d0ae1a272f",
+      "name": "filter domains3"
+    },
+    {
+      "parameters": {
+        "jsCode": "let allSubdomains = [];\n\nfor (const item of items) {\n  const values = Object.values(item.json).flat();\n\n  for (let value of values) {\n    if (typeof value === 'string') {\n      const parts = value\n        .split(/[\\n,]+/)\n        .map(v => v.trim())\n        .filter(v => v);\n      allSubdomains.push(...parts);\n    }\n  }\n}\n\nconst unique = [...new Set(allSubdomains)];\n\nreturn [\n  {\n    json: {\n      subdomains: unique\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        -416
+      ],
+      "id": "918770cd-1fb2-4657-9eb6-1dd2edbc4c6e",
+      "name": "filter domains4"
+    },
+    {
+      "parameters": {
+        "jsCode": "let allSubdomains = [];\n\nfor (const item of items) {\n  const values = Object.values(item.json).flat();\n\n  for (let value of values) {\n    if (typeof value === 'string') {\n      const parts = value\n        .split(/[\\n,]+/)\n        .map(v => v.trim())\n        .filter(v => v);\n      allSubdomains.push(...parts);\n    }\n  }\n}\n\nconst unique = [...new Set(allSubdomains)];\n\nreturn [\n  {\n    json: {\n      subdomains: unique\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        64
+      ],
+      "id": "f8247a22-7273-4448-9549-0535a575aca1",
+      "name": "filter domains5"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\n// Regex para validar subdominios (sin asterisco al inicio)\nconst validRegex = /^(?!\\*)(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,}$/;\n\n// Extrae y filtra los subdominios desde el input dinámico\nconst allSubdomains = items\n  .flatMap(item => {\n    const data = item.json.subdomains || item.json.subdomain || item.json.domain || \"\";\n    return data\n      .toString()\n      .split(/\\s*,\\s*|\\s+/)\n      .map(str => str.trim().replace(/:\\d+$/, \"\"));\n  })\n  .filter(str => validRegex.test(str));\n\n// Genera la salida como texto con saltos de línea\nconst txtOutput = allSubdomains.join(\"\\n\");\n\nreturn [{ json: { subdomain: txtOutput } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        64
+      ],
+      "id": "fa8032f1-f7ed-45bf-879b-94804b9fd91b",
+      "name": "filter domains6"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $json[\"Passive Results\"];   // Replace \"data\" with your actual field name\n\n// Split by newline and clean extra stuff like \"[Google Web Server]\"\nconst cleaned = raw\n  .split('\\n')\n  .map(x => x.replace(/\\[.*?\\]/g, '').trim()) // remove bracket info\n  .filter(x => x.length > 0);\n\nreturn cleaned.map(item => ({ subdomain: item }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1392,
+        64
+      ],
+      "id": "fef1da2b-2f4f-463d-8784-53ce0bf47507",
+      "name": "filter domains7"
+    },
+    {
+      "parameters": {
+        "model": "sonar-pro",
+        "messages": {
+          "message": [
+            {
+              "content": "=You are a CTF reconnaissance expert. Analyze these subdomains from a CTF challenge:  \n{{ $json.subdomain }}\nFor each subdomain, classify as \"relevant\" (high priority for solving) or \"irrelevant\". Relevant subdomains contain keywords hinting at:\n- Admin panels: admin, panel, dashboard, portal, mgmt\n- APIs/services: api, dev, staging, test, beta\n- Auth/weak points: login, auth, user, customer\n- Exposed files: backup, db, config, debug, logs\n- Common CTF flags: flag, root, pwn, vuln\n\nOutput ONLY valid JSON array:\n[\n  {\n    \"subdomain\": \"exact.name.here\",\n    \"relevant\": true/false,\n    \"priority\": \"high/medium/low\"\n  }\n] "
+            }
+          ]
+        },
+        "simplify": true,
+        "options": {},
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-base.perplexity",
+      "typeVersion": 1,
+      "position": [
+        1840,
+        232
+      ],
+      "id": "e1cb4208-13d1-476c-85d3-470c4c3766e0",
+      "name": "filter important"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "crt.sh": {
+      "main": [
+        [
+          {
+            "node": "filter domains1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Domains names",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook1": {
+      "main": [
+        []
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "filter domains5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "subfinder",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "crt.sh",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "assesfinder",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Wayback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "subfinder": {
+      "main": [
+        [
+          {
+            "node": "filter domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "assesfinder": {
+      "main": [
+        [
+          {
+            "node": "filter domains2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wayback": {
+      "main": [
+        [
+          {
+            "node": "filter domains3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "filter domains4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Upload a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload a file": {
+      "main": [
+        [
+          {
+            "node": "httpx",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "httpx": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "filter domains7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript8": {
+      "main": [
+        [
+          {
+            "node": "Convert to File2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File2": {
+      "main": [
+        [
+          {
+            "node": "Upload a file1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File1": {
+      "main": [
+        [
+          {
+            "node": "Upload a file2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "filter important",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload a file2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Domains names": {
+      "main": [
+        [
+          {
+            "node": "make json of domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "make json of domains": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filter domains": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filter domains1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "filter domains2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "filter domains3": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "filter domains4": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filter domains5": {
+      "main": [
+        [
+          {
+            "node": "filter domains6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filter domains6": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filter domains7": {
+      "main": [
+        [
+          {
+            "node": "Convert to File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filter important": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "59794cfb-02fe-4ef5-90dd-7bc309c28b73",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d4ee1f9372242dfe823995b9b78f7a0be177bf369c9baaa3ade93f309e18caa0"
+  },
+  "id": "toQXSLShtAQWKaf7",
+  "tags": []
+}
